@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math"
 	"net"
 	"strconv"
 	"strings"
@@ -26,10 +27,8 @@ func main() {
 	// Recibir y almacenar los datos del servidor
 	dataSlice := recibirDatos(conn)
 
-	// Calcular similitud entre ítems o usuarios en los datos recibidos
-	resultados := calcularSimilitud(dataSlice)
-
-	//fmt.Println("Enviando resultados:", resultados)
+	// Calcular similitud coseno entre ítems en los datos recibidos
+	resultados := calcularSimilitudCoseno(dataSlice)
 
 	// Enviar los resultados parciales al servidor
 	enviarResultados(conn, resultados)
@@ -58,8 +57,8 @@ func recibirDatos(conn net.Conn) [][]string {
 	return dataSlice
 }
 
-// Calcular similitud entre ítems o usuarios
-func calcularSimilitud(dataSlice [][]string) map[string]float64 {
+// Calcular similitud coseno entre ítems
+func calcularSimilitudCoseno(dataSlice [][]string) map[string]float64 {
 	resultados := make(map[string]float64)
 
 	// Itera sobre cada fila de dataSlice
@@ -72,19 +71,31 @@ func calcularSimilitud(dataSlice [][]string) map[string]float64 {
 		productID := row[2] // Columna del ID del producto (índice 2)
 		stars := row[4]     // Columna de las calificaciones `stars` (índice 4)
 
-		//fmt.Println("Valor stars:", stars)
-
 		// Convertimos 'stars' a float64 solo para almacenamiento
-		if valor, err := strconv.ParseFloat(stars, 64); err == nil {
-			//fmt.Println("Valor valor:", stars)
-			resultados[productID] += valor
-		} else {
+		valor, err := strconv.ParseFloat(stars, 64)
+		if err != nil {
 			fmt.Println("Error al convertir 'stars' en float:", err)
+			continue
 		}
+
+		// Valores para similitud coseno
+		referencia := 5.0
+		resultados[productID] = calcularCoseno(valor, referencia)
 	}
 
-	//fmt.Println("Resultados calculados en el cliente:", resultados) // Verifica el contenido de resultados
 	return resultados
+}
+
+// Calcula la similitud coseno entre dos valores
+func calcularCoseno(calificacionA, referencia float64) float64 {
+	producto_punto := calificacionA * referencia
+	magnitud_A := math.Sqrt(calificacionA * calificacionA)
+	magnitud_B := math.Sqrt(referencia * referencia)
+
+	if magnitud_A == 0 || magnitud_B == 0 {
+		return 0
+	}
+	return producto_punto / (magnitud_A * magnitud_B)
 }
 
 // Enviar resultados al servidor
