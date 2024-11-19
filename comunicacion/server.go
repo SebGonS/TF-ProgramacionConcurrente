@@ -100,6 +100,39 @@ func cargarDataset(path string) ([][]string, error) {
 	return data, nil
 }
 
+// manejar la api
+func manejarAPI(conn net.Conn) {
+	defer conn.Close()
+
+	buf := make([]byte, 1024)
+	n, err := conn.Read(buf)
+	if err != nil {
+		fmt.Println("Error al leer solicitud de la API:", err)
+		return
+	}
+
+	solicitud := strings.TrimSpace(string(buf[:n]))
+	fmt.Printf("Solicitud recibida de la API: %s\n", solicitud)
+
+	// Responder a la solicitud
+	if solicitud == "lista_productos" {
+		// Obtener la lista de productos (puedes adaptar esta función según tu lógica)
+		listaProductos := obtenerListaDeProductos()
+		fmt.Fprintln(conn, listaProductos)
+	} else if solicitud == "recomendaciones" {
+		// Obtener recomendaciones combinadas
+		recomendaciones := combinarResultados()
+		conn.Write([]byte(fmt.Sprintf("%v\n", recomendaciones)))
+	} else {
+		fmt.Fprintln(conn, "Solicitud no reconocida.")
+	}
+}
+
+// obtenerListaDeProductos devuelve una lista de productos (dummy data para este ejemplo)
+func obtenerListaDeProductos() string {
+	return "Producto1, Producto2, Producto3, Producto4, Producto5"
+}
+
 // Manejar la conexión con el cliente
 func manejarCliente(conn net.Conn, dataset [][]string, nodeID int) {
 	defer conn.Close()
